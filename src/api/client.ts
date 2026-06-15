@@ -42,7 +42,7 @@ export async function apiFetch(path: string, opts: FetchOpts = {}): Promise<Resp
         })
         .catch(() => {
           signOut()
-          window.location.href = '/entrar'
+          if (import.meta.client) window.location.href = '/entrar'
         })
         .finally(() => { _refreshing = null })
     }

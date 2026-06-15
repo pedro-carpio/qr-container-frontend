@@ -1,0 +1,90 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:   #0f172a;
+  --surf: #1e293b;
+  --bd:   #334155;
+  --tx:   #f1f5f9;
+  --mu:   #94a3b8;
+  --ac:   #3b82f6;
+  --ac2:  #2563eb;
+  --er:   #ef4444;
+  --ok:   #22c55e;
+  --r:    .5rem;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+  min-height: 100dvh;
+  line-height: 1.5;
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.page { display: flex; align-items: center; justify-content: center; min-height: 100dvh; padding: 1rem; }
+.card { background: var(--surf); border: 1px solid var(--bd); border-radius: calc(var(--r) * 2); padding: 2rem; width: 100%; max-width: 22rem; }
+
+/* ── Typography ─────────────────────────────────────────────── */
+h1   { font-size: 1.375rem; font-weight: 700; margin-bottom: .25rem; }
+.sub { color: var(--mu); font-size: .875rem; margin-bottom: 1.75rem; }
+
+/* ── Form ───────────────────────────────────────────────────── */
+.field + .field { margin-top: .875rem; }
+label { display: block; font-size: .8125rem; font-weight: 500; color: var(--mu); margin-bottom: .375rem; }
+input, select {
+  width: 100%; background: var(--bg); border: 1px solid var(--bd);
+  border-radius: var(--r); padding: .5625rem .75rem;
+  color: var(--tx); font-size: .875rem; outline: none;
+  transition: border-color .15s;
+}
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .75rem center;
+  padding-right: 2.25rem;
+  cursor: pointer;
+}
+select option { background: var(--surf); }
+input:focus, select:focus { border-color: var(--ac); }
+input[aria-invalid=true] { border-color: var(--er); }
+.hint                    { font-size: .75rem; margin-top: .25rem; color: var(--mu); }
+.hint.err                { color: var(--er); }
+.hint.ok                 { color: var(--ok); }
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .5625rem 1rem; border: 1px solid transparent;
+  border-radius: var(--r); font-size: .875rem; font-weight: 600;
+  cursor: pointer; transition: background .15s, opacity .15s;
+  text-decoration: none;
+}
+.btn-full { width: 100%; }
+.btn + .btn, .btn-wrap { margin-top: .75rem; }
+.btn-p { background: var(--ac); color: #fff; border-color: var(--ac); }
+.btn-p:hover:not(:disabled) { background: var(--ac2); }
+.btn-g { background: transparent; color: var(--mu); border-color: var(--bd); }
+.btn-g:hover:not(:disabled) { color: var(--tx); border-color: var(--tx); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Alert ──────────────────────────────────────────────────── */
+.alert {
+  background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
+  color: #fca5a5; border-radius: var(--r); padding: .75rem;
+  font-size: .8125rem; margin-bottom: 1rem;
+}
+
+/* ── Footer link ────────────────────────────────────────────── */
+.foot { text-align: center; margin-top: 1rem; font-size: .8125rem; color: var(--mu); }
+.foot a { color: var(--ac); text-decoration: none; }
+.foot a:hover { text-decoration: underline; }
+
+/* ── Spinner ────────────────────────────────────────────────── */
+.spin {
+  width: .9rem; height: .9rem; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,.25); border-top-color: #fff;
+  border-radius: 50%; animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
