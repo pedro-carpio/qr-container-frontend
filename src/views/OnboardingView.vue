@@ -136,12 +136,21 @@ async function goStep2() {
           <div class="field">
             <label>QR</label>
             <QrScanner @decoded="qrString = $event" v-if="!qrString" />
-            <div v-if="qrString" class="qr-preview">
-              <span class="qr-label"
-                >QR detectado, recuerda que no podemos verificar fecha ni monto</span
-              ><br />
-              <button type="button" class="qr-clear" @click="qrString = ''" title="Limpiar">
-                ✕
+            <div v-if="qrString" class="qr-detected">
+              <div class="qr-detected-status">
+                <svg class="qr-check" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span>QR cargado correctamente</span>
+              </div>
+              <p class="qr-detected-note">No podemos verificar el monto ni la fecha desde aquí.</p>
+              <button type="button" class="btn btn-g qr-reload" @click="qrString = ''">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Subir otro
               </button>
             </div>
           </div>
@@ -333,5 +342,43 @@ async function goStep2() {
   font-size: 0.8125rem;
   color: var(--mu);
   line-height: 1.4;
+}
+
+/* ── qr detected state ── */
+.qr-detected {
+  margin-top: .5rem;
+  padding: .75rem 1rem;
+  background: rgba(34, 197, 94, .08);
+  border: 1px solid rgba(34, 197, 94, .25);
+  border-radius: var(--r);
+}
+
+.qr-detected-status {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--ok, #22c55e);
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.qr-check {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+.qr-detected-note {
+  font-size: .75rem;
+  color: var(--mu);
+  margin: .25rem 0 .625rem;
+}
+
+.qr-reload {
+  font-size: .8rem;
+  padding: .275rem .625rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
 }
 </style>

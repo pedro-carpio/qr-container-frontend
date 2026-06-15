@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import QRCode from 'qrcode'
 import { toPng } from 'html-to-image'
 import { getRouterQr } from '../../api/router'
+import { getCachedRouterQr, setCachedRouterQr } from '../../stores/qrCache'
 
 const route  = useRoute()
 const router = useRouter()
@@ -52,7 +53,11 @@ async function download() {
 
 onMounted(async () => {
   try {
-    const data = await getRouterQr(slug, amount)
+    let data = getCachedRouterQr(slug, amount)
+    if (!data) {
+      data = await getRouterQr(slug, amount)
+      setCachedRouterQr(slug, amount, data)
+    }
     expirationDate.value = data.expiration_date
     cardColor.value = resolveColor(data.card_color)
     logoUrl.value = data.logo_url

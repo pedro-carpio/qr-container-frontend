@@ -2,26 +2,38 @@
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getQrs, type Qr, type QrPage } from '../../api/qrs'
+import { getRouterQr } from '../../api/router'
+import { auth } from '../../stores/auth'
+import { getCachedPage, setCachedPage, getCachedRouterQr, setCachedRouterQr } from '../../stores/qrCache'
 import ShareDialog from '../../components/ShareDialog.vue'
 
-const loading     = ref(true)
-const err         = ref('')
-const qrs         = ref<Qr[]>([])
-const page        = ref(1)
-const total       = ref(0)
-const LIMIT       = 20
-const selectedQr  = ref<Qr | null>(null)
+const loading    = ref(true)
+const err        = ref('')
+const qrs        = ref<Qr[]>([])
+const page       = ref(1)
+const total      = ref(0)
+const LIMIT      = 20
+const selectedQr = ref<Qr | null>(null)
 
 const totalPages = () => Math.max(1, Math.ceil(total.value / LIMIT))
 
 async function load(p = 1) {
-  loading.value = true
   err.value = ''
+  const cached = getCachedPage(p)
+  if (cached) {
+    qrs.value   = cached.data
+    total.value = cached.total
+    page.value  = cached.page
+    loading.value = false
+    return
+  }
+  loading.value = true
   try {
     const res: QrPage = await getQrs(p, LIMIT)
-    qrs.value = res.data
+    setCachedPage(p, res)
+    qrs.value   = res.data
     total.value = res.total
-    page.value = res.page
+    page.value  = res.page
   } catch (e: any) {
     err.value = e.message ?? 'Error al cargar los QRs'
   } finally {
@@ -39,6 +51,23 @@ function fmtDate(d: string) {
 
 function daysLeft(d: string) {
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86_400_000)
+}
+
+// ── Prefetch card data on hover ───────────────────────────────
+const _prefetching = new Set<string>()
+async function prefetchCard(q: Qr) {
+  if (q.amount == null || !auth.slug) return
+  const key = `${auth.slug}/${q.amount}`
+  if (getCachedRouterQr(auth.slug, q.amount) || _prefetching.has(key)) return
+  _prefetching.add(key)
+  try {
+    const data = await getRouterQr(auth.slug, q.amount)
+    setCachedRouterQr(auth.slug, q.amount, data)
+  } catch {
+    // silently ignore — prefetch is best-effort
+  } finally {
+    _prefetching.delete(key)
+  }
 }
 
 onMounted(() => load())
@@ -64,19 +93,24 @@ onMounted(() => load())
           <thead>
             <tr>
               <th>Monto</th>
-              <th>Banco</th>
+              <th class="col-bank">Banco</th>
               <th>Vencimiento</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="q in qrs" :key="q.id" :class="daysLeft(q.expiration_date) <= 30 ? 'row-expiring' : ''">
+            <tr
+              v-for="q in qrs"
+              :key="q.id"
+              :class="daysLeft(q.expiration_date) <= 30 ? 'row-expiring' : ''"
+              @mouseenter="prefetchCard(q)"
+            >
               <td>
                 <span :class="q.amount == null ? 'badge-open' : 'badge-fixed'">
                   {{ fmtAmount(q) }}
                 </span>
               </td>
-              <td class="muted">{{ q.bank ?? '—' }}</td>
+              <td class="muted col-bank">{{ q.bank ?? '—' }}</td>
               <td>
                 {{ fmtDate(q.expiration_date) }}
                 <span
@@ -87,11 +121,12 @@ onMounted(() => load())
                 </span>
               </td>
               <td class="td-action">
-                <button v-if="q.amount != null" class="share-btn" title="Compartir" @click="selectedQr = q">
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm-7-4a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm7-5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM4 6.93l6.5 3.64m0-5.14L4 8.07" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+                <button v-if="q.amount != null" class="view-btn" title="Ver tarjeta QR" @click="selectedQr = q">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
                   </svg>
-                  Compartir
+                  <span class="btn-label">Ver</span>
                 </button>
               </td>
             </tr>
@@ -149,13 +184,20 @@ onMounted(() => load())
 .link:hover { text-decoration: underline; }
 
 .td-action { width: 1px; white-space: nowrap; padding-right: .75rem; }
-.share-btn {
-  display: inline-flex; align-items: center; gap: .35rem;
-  padding: .275rem .625rem; border-radius: var(--r);
+.view-btn {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .275rem .55rem; border-radius: var(--r);
   background: transparent; border: 1px solid var(--bd);
   color: var(--mu); font-size: .75rem; font-weight: 500;
   cursor: pointer; transition: color .15s, border-color .15s;
   white-space: nowrap;
 }
-.share-btn:hover { color: var(--tx); border-color: var(--tx); }
+.view-btn:hover { color: var(--tx); border-color: var(--tx); }
+
+@media (max-width: 600px) {
+  .tbl th, .tbl td { padding: .5rem .625rem; }
+  .col-bank { display: none; }
+  .btn-label { display: none; }
+  .view-btn { padding: .275rem .4rem; }
+}
 </style>

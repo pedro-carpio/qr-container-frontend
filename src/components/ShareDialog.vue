@@ -26,7 +26,7 @@ function open() {
 <template>
   <div class="overlay" @click.self="$emit('close')">
     <div class="dialog" role="dialog" aria-modal="true">
-      <h3 class="dlg-title">Compartir QR</h3>
+      <h3 class="dlg-title">Ver tarjeta</h3>
       <p class="dlg-sub">El nombre aparecerá en la tarjeta del QR.</p>
 
       <div class="field">

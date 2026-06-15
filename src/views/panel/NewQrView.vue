@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createQr } from '../../api/qrs'
+import { invalidateQrCache } from '../../stores/qrCache'
 import QrScanner from '../../components/QrScanner.vue'
 
 const router = useRouter()
@@ -34,6 +35,7 @@ async function go() {
       ...(bank.value.trim() && { bank: bank.value.trim() }),
       card_color: cardColor.value,
     })
+    invalidateQrCache()
     router.push('/panel')
   } catch (e: any) {
     err.value = e.message ?? 'Error inesperado'
@@ -61,7 +63,14 @@ async function go() {
           <div v-if="qrString" class="qr-preview">
             <span class="qr-label">QR detectado:</span>
             <span class="qr-val">{{ qrString }}</span>
-            <button type="button" class="qr-clear" @click="qrString = ''" title="Limpiar">✕</button>
+            <button type="button" class="qr-reload" @click="qrString = ''">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Subir otro
+            </button>
           </div>
         </div>
 
@@ -110,17 +119,21 @@ async function go() {
 }
 .qr-label { color: var(--ok, #22c55e); font-weight: 600; flex-shrink: 0; }
 .qr-val   { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mu, #9ca3af); }
-.qr-clear {
+.qr-reload {
   flex-shrink: 0;
   background: none;
-  border: none;
+  border: 1px solid var(--bd, #334155);
+  border-radius: var(--r, 8px);
   cursor: pointer;
   color: var(--mu, #9ca3af);
-  font-size: .85rem;
-  padding: 0 .1rem;
-  line-height: 1;
+  font-size: .72rem;
+  padding: .2rem .45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  white-space: nowrap;
 }
-.qr-clear:hover { color: var(--err, #ef4444); }
+.qr-reload:hover { color: var(--tx); border-color: var(--mu); }
 
 .color-row {
   display: flex;
