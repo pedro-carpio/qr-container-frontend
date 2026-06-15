@@ -51,6 +51,7 @@ export const createFallbackQr = (payload: {
   qr_string: string
   expiration_date: string
   bank?: string
+  card_color?: string
 }) => apiJson('/api/qrs/fallback', {
   method: 'POST',
   body: JSON.stringify(payload),

@@ -1,0 +1,725 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "QR Router API",
+    "version": "1.0.0",
+    "description": "QR routing backend - Cloudflare Workers + D1 + KV"
+  },
+  "components": {
+    "schemas": {},
+    "parameters": {},
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Create a new account",
+        "operationId": "post_Signup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JWT token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["token"]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already registered"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login with email and password",
+        "operationId": "post_Login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JWT token and user info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    },
+                    "fallback_qr_string": {
+                      "type": ["string", "null"]
+                    },
+                    "logo_url": {
+                      "type": ["string", "null"]
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "company_name": {
+                          "type": ["string", "null"]
+                        },
+                        "slug": {
+                          "type": ["string", "null"]
+                        },
+                        "is_fully_registered": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": ["id", "email", "company_name", "slug", "is_fully_registered"]
+                    }
+                  },
+                  "required": [
+                    "access_token",
+                    "refresh_token",
+                    "fallback_qr_string",
+                    "logo_url",
+                    "user"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Refresh access token",
+        "operationId": "post_RefreshToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refresh_token": {
+                    "type": "string"
+                  }
+                },
+                "required": ["refresh_token"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["access_token"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token"
+          }
+        }
+      }
+    },
+    "/api/company": {
+      "post": {
+        "tags": ["Onboarding"],
+        "summary": "Set company name and slug (one-time onboarding)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "post_CompanySetup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "company_name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^[a-z0-9-]+$"
+                  }
+                },
+                "required": ["company_name", "slug"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Company info updated"
+          },
+          "409": {
+            "description": "Slug already taken"
+          }
+        }
+      }
+    },
+    "/api/qrs/fallback": {
+      "post": {
+        "tags": ["QRs"],
+        "summary": "Create or replace fallback QR (expiration > 11 months required)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "post_QrsFallbackCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "qr_string": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expiration_date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "bank": {
+                    "type": "string"
+                  },
+                  "card_color": {
+                    "type": "string"
+                  }
+                },
+                "required": ["qr_string", "expiration_date"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fallback QR saved"
+          },
+          "400": {
+            "description": "Expiration date too soon"
+          }
+        }
+      }
+    },
+    "/api/approve": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Approve a user (admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "post_ApproveUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": ["user_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User approved"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/qrs": {
+      "post": {
+        "tags": ["QRs"],
+        "summary": "Create or replace a QR for a specific amount",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "post_QrsCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "qr_string": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expiration_date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "bank": {
+                    "type": "string"
+                  },
+                  "card_color": {
+                    "type": "string"
+                  }
+                },
+                "required": ["amount", "qr_string", "expiration_date"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "QR saved"
+          }
+        }
+      },
+      "get": {
+        "tags": ["QRs"],
+        "summary": "List your own QRs",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "get_QrsList",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of your QRs"
+          }
+        }
+      }
+    },
+    "/api/qrs/expiring": {
+      "get": {
+        "tags": ["QRs"],
+        "summary": "List your QRs expiring within 30 days",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "get_QrsExpiring",
+        "responses": {
+          "200": {
+            "description": "QRs expiring within the next 30 days, ordered by soonest first"
+          }
+        }
+      }
+    },
+    "/api/logo": {
+      "post": {
+        "tags": ["Logo"],
+        "summary": "Upload logo image (pro plan only, multipart/form-data with 'logo' field)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "post_LogoUpload",
+        "responses": {
+          "200": {
+            "description": "Logo uploaded successfully"
+          },
+          "400": {
+            "description": "Invalid image (type, size, or dimensions)"
+          },
+          "403": {
+            "description": "Pro plan required"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Logo"],
+        "summary": "Get current user's logo (pro plan only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "get_LogoGet",
+        "responses": {
+          "200": {
+            "description": "Logo image"
+          },
+          "403": {
+            "description": "Pro plan required"
+          },
+          "404": {
+            "description": "No logo uploaded"
+          }
+        }
+      }
+    },
+    "/api/qrs/render/{amount}": {
+      "get": {
+        "tags": ["QRs"],
+        "summary": "Render a QR as SVG image (pro plan only). Falls back to fallback QR if no QR exists for the given amount.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "get_QrsRender",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+(\\.\\d+)?$"
+            },
+            "required": true,
+            "name": "amount",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SVG image of the QR code"
+          },
+          "404": {
+            "description": "No QR found for this user and amount"
+          }
+        }
+      }
+    },
+    "/api/admin/stats": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Aggregate platform statistics (admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "get_AdminStats",
+        "responses": {
+          "200": {
+            "description": "Aggregate stats for users and QRs"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/admin/pending": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List users pending approval (admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "get_AdminListPending",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of pending users"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List all users (admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "get_AdminListUsers",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "active"]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of users"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{user_id}/qrs": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List QRs for a specific user (admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "operationId": "get_AdminUserQrs",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "user_id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details and paginated QR list"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/router/{slug}/{amount}": {
+      "get": {
+        "tags": ["Router"],
+        "summary": "Resolve QR string for a given slug and amount",
+        "operationId": "get_RouterGet",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "slug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "required": true,
+            "name": "amount",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "QR string",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "qr_string": {
+                      "type": "string"
+                    },
+                    "expiration_date": {
+                      "type": "string"
+                    },
+                    "card_color": {
+                      "type": ["string", "null"]
+                    }
+                  },
+                  "required": ["qr_string", "expiration_date", "card_color"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

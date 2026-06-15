@@ -5,6 +5,8 @@ export const auth = reactive({
   refresh: sessionStorage.getItem('qr_rt') ?? null,
   hasCompany: sessionStorage.getItem('qr_co') === '1',
   slug: sessionStorage.getItem('qr_slug') ?? null as string | null,
+  logoUrl: sessionStorage.getItem('qr_logo') ?? null as string | null,
+  hasFallback: sessionStorage.getItem('qr_fb') === '1',
   get isAdmin() { return this.slug === 'admin' },
 })
 
@@ -32,12 +34,26 @@ export function setSlug(s: string) {
   sessionStorage.setItem('qr_slug', s)
 }
 
+export function setLogoUrl(url: string | null) {
+  auth.logoUrl = url
+  url ? sessionStorage.setItem('qr_logo', url) : sessionStorage.removeItem('qr_logo')
+}
+
+export function setHasFallback(v: boolean) {
+  auth.hasFallback = v
+  v ? sessionStorage.setItem('qr_fb', '1') : sessionStorage.removeItem('qr_fb')
+}
+
 export function signOut() {
   auth.access = null
   auth.refresh = null
   auth.hasCompany = false
   auth.slug = null
+  auth.logoUrl = null
+  auth.hasFallback = false
   sessionStorage.removeItem('qr_rt')
   sessionStorage.removeItem('qr_co')
   sessionStorage.removeItem('qr_slug')
+  sessionStorage.removeItem('qr_logo')
+  sessionStorage.removeItem('qr_fb')
 }

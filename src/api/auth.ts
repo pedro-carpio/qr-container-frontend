@@ -3,7 +3,15 @@ import { apiJson } from './client'
 export interface LoginResponse {
   access_token: string
   refresh_token: string
-  user: { is_fully_registered: boolean; slug: string | null }
+  fallback_qr_string: string | null
+  logo_url: string | null
+  user: {
+    id: string
+    email: string
+    company_name: string | null
+    slug: string | null
+    is_fully_registered: boolean
+  }
 }
 
 export function login(email: string, password: string) {

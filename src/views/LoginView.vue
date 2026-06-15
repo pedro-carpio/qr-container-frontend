@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { login } from '../api/auth'
-import { setAuth, setCompany, setSlug, auth } from '../stores/auth'
+import { setAuth, setCompany, setSlug, setLogoUrl, setHasFallback, auth } from '../stores/auth'
 
 const router = useRouter()
 const email = ref('')
@@ -18,6 +18,8 @@ async function go() {
     setAuth(data.access_token, data.refresh_token)
     setCompany(data.user.is_fully_registered)
     if (data.user.slug) setSlug(data.user.slug)
+    setLogoUrl(data.logo_url)
+    setHasFallback(!!data.fallback_qr_string)
     router.push(auth.isAdmin ? '/admin' : auth.hasCompany ? '/panel' : '/iniciar')
   } catch (e: any) {
     err.value = e.message ?? 'Error inesperado'

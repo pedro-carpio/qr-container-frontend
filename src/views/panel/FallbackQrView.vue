@@ -5,12 +5,13 @@ import { createFallbackQr } from '../../api/qrs'
 import QrScanner from '../../components/QrScanner.vue'
 
 const router   = useRouter()
-const qrString = ref('')
-const date     = ref('')
-const bank     = ref('')
-const err      = ref('')
-const busy     = ref(false)
-const today    = new Date().toISOString().slice(0, 10)
+const qrString  = ref('')
+const date      = ref('')
+const bank      = ref('')
+const cardColor = ref('#16a34a')
+const err       = ref('')
+const busy      = ref(false)
+const today     = new Date().toISOString().slice(0, 10)
 
 function onDecoded(val: string) {
   qrString.value = val
@@ -27,6 +28,7 @@ async function go() {
       qr_string:       qrString.value.trim(),
       expiration_date: new Date(date.value).toISOString(),
       ...(bank.value.trim() && { bank: bank.value.trim() }),
+      card_color: cardColor.value,
     })
     router.push('/panel')
   } catch (e: any) {
@@ -62,6 +64,13 @@ async function go() {
           <label for="bank">Banco <span class="opt">(opcional)</span></label>
           <input id="bank" v-model="bank" type="text" placeholder="Ej: Santander" />
         </div>
+        <div class="field">
+          <label for="card-color">Color de tarjeta</label>
+          <div class="color-row">
+            <input id="card-color" v-model="cardColor" type="color" class="color-swatch" />
+            <span class="color-hex">{{ cardColor }}</span>
+          </div>
+        </div>
         <div class="btn-wrap">
           <button class="btn btn-p btn-full" :disabled="busy || !qrString">
             <span v-if="busy" class="spin" />
@@ -78,6 +87,30 @@ async function go() {
 .form-wrap { display: flex; justify-content: center; }
 .form-wrap .card { max-width: 26rem; }
 .opt { color: var(--mu); font-weight: 400; font-size: .75rem; }
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: .25rem;
+}
+.color-swatch {
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+  background: none;
+  flex-shrink: 0;
+}
+.color-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.color-swatch::-webkit-color-swatch { border: none; border-radius: calc(var(--radius, 8px) - 1px); }
+.color-hex {
+  font-size: .82rem;
+  color: var(--mu, #9ca3af);
+  font-family: monospace;
+}
 
 .qr-preview {
   display: flex;

@@ -1,6 +1,6 @@
 import { auth, setAuth, signOut } from '../stores/auth'
 
-const BASE = 'https://qr-container.pedrocarpiom.workers.dev'
+export const BASE = 'https://qr-container.pedrocarpiom.workers.dev'
 
 let _refreshing: Promise<void> | null = null
 

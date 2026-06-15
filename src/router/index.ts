@@ -11,6 +11,7 @@ import NewQrView from '../views/panel/NewQrView.vue'
 import FallbackQrView from '../views/panel/FallbackQrView.vue'
 import ExpiringView from '../views/panel/ExpiringView.vue'
 import QrCardView from '../views/panel/QrCardView.vue'
+import LogoView from '../views/panel/LogoView.vue'
 import AdminLayout from '../views/admin/AdminLayout.vue'
 import StatsView from '../views/admin/StatsView.vue'
 import AdminPendingView from '../views/admin/PendingView.vue'
@@ -34,6 +35,7 @@ const router = createRouter({
         { path: 'nuevo', component: NewQrView },
         { path: 'qr-abierto', component: FallbackQrView },
         { path: 'venciendo', component: ExpiringView },
+        { path: 'logo', component: LogoView },
       ],
     },
     {

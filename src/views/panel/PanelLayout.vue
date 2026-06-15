@@ -18,6 +18,7 @@ function out() {
         <RouterLink to="/panel/nuevo" class="nav-link">Nuevo QR</RouterLink>
         <RouterLink to="/panel/qr-abierto" class="nav-link">QR Abierto</RouterLink>
         <RouterLink to="/panel/venciendo" class="nav-link">Venciendo</RouterLink>
+        <RouterLink to="/panel/logo" class="nav-link">Logo</RouterLink>
       </div>
       <div class="nav-end">
         <RouterLink v-if="auth.isAdmin" to="/admin" class="btn btn-g btn-sm">Admin</RouterLink>

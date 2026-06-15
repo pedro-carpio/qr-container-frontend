@@ -16,6 +16,7 @@ const cardRef        = ref<HTMLElement | null>(null)
 const qrDataUrl      = ref('')
 const expirationDate = ref('')
 const cardColor      = ref('#16a34a')
+const logoUrl        = ref<string | null>(null)
 const loading        = ref(true)
 const err            = ref('')
 const downloading    = ref(false)
@@ -54,6 +55,7 @@ onMounted(async () => {
     const data = await getRouterQr(slug, amount)
     expirationDate.value = data.expiration_date
     cardColor.value = resolveColor(data.card_color)
+    logoUrl.value = data.logo_url
     qrDataUrl.value = await QRCode.toDataURL(data.qr_string, {
       width: 600,
       margin: 1,
@@ -95,8 +97,9 @@ onMounted(async () => {
     <div v-else ref="cardRef" class="card-root">
       <!-- header -->
       <div class="card-header" :style="{ '--card-color': cardColor }">
-        <div class="hdr-badge">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <div class="hdr-badge" :class="{ 'hdr-badge--logo': logoUrl }">
+          <img v-if="logoUrl" :src="logoUrl" class="hdr-logo" alt="Logo" />
+          <svg v-else width="20" height="20" viewBox="0 0 20 20" fill="none">
             <rect width="8" height="8" rx="1.5" fill="white"/>
             <rect x="12" width="8" height="8" rx="1.5" fill="white"/>
             <rect y="12" width="8" height="8" rx="1.5" fill="white"/>
@@ -174,7 +177,10 @@ onMounted(async () => {
   width: 44px; height: 44px; flex-shrink: 0;
   background: rgba(255,255,255,.18); border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
 }
+.hdr-badge--logo { background: #fff; padding: 4px; }
+.hdr-logo { width: 100%; height: 100%; object-fit: contain; display: block; }
 .hdr-text { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
 .hdr-label {
   font-size: .6875rem; font-weight: 600;
